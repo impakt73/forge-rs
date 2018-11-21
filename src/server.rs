@@ -1,7 +1,5 @@
-extern crate failure;
 use failure::Error;
 
-extern crate ws;
 use ws::{listen, Handler, Sender, Message, CloseCode, Handshake, Response, Request};
 
 use std::ffi::c_void;
