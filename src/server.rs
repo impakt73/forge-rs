@@ -132,8 +132,9 @@ unsafe impl Send for PacketCallback {}
 unsafe impl Sync for PacketCallback {}
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct ServerConfig {
-    pub host: Option<*const c_char>,
+    pub host: *const c_char,
     pub callback: PacketCallback,
     pub port: u32,
     _padding : u32
@@ -143,11 +144,11 @@ pub struct ServerConfig {
 pub unsafe extern "C" fn forge_start_server(config: *const ServerConfig) -> *mut ServerContext {
     if config.is_null() { return ptr::null_mut(); }
 
-    let config = &(*config);
-    if config.host.is_none() { return ptr::null_mut(); }
+    let config = (*config).clone();
+    if config.host.is_null() { return ptr::null_mut(); }
     if config.callback.func.is_none() { return ptr::null_mut(); }
 
-    match run_server(&CStr::from_ptr(config.host.unwrap()).to_string_lossy(), config.port, &config.callback) {
+    match run_server(&CStr::from_ptr(config.host).to_string_lossy(), config.port, &config.callback) {
         Ok(context) => {
             Box::into_raw(Box::new(context))
         },
