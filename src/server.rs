@@ -7,6 +7,7 @@ use std::ptr;
 use std::thread;
 use std::ffi::CStr;
 use std::os::raw::c_char;
+use std::slice;
 
 static FORGE_PROTOCOL: &str = "forge";
 
@@ -20,7 +21,7 @@ impl ForgeHandler {
         println!("Received {} byte packet", packet.len());
         unsafe {
             match self.callback.func {
-                Some(func) => func(self.callback.userdata, std::mem::transmute(packet.as_ptr())),
+                Some(func) => func(self.callback.userdata, std::mem::transmute(packet.as_ptr()), packet.len() as u32),
                 None => ()
             }
         }
@@ -124,7 +125,7 @@ pub fn run_server(host: &str, port: u32, callback: &PacketCallback) -> Result<Se
 #[derive(Clone)]
 pub struct PacketCallback {
     pub userdata: *mut c_void,
-    pub func: Option<unsafe extern "C" fn(*mut c_void, *const c_void)>,
+    pub func: Option<unsafe extern "C" fn(*mut c_void, *const c_void, u32)>,
 }
 
 // @TODO Is this correct...?
@@ -158,8 +159,16 @@ pub unsafe extern "C" fn forge_start_server(config: *const ServerConfig) -> *mut
 
 #[no_mangle]
 pub unsafe extern "C" fn forge_stop_server(context: *mut ServerContext) {
-    if context.is_null() {
+    if context.is_null() == false {
         let context = Box::from_raw(context);
         context.shutdown().unwrap();
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn forge_send_packet(context: *mut ServerContext, packet: *const c_void, packet_size: u32) {
+    if let Some(context) = context.as_ref() {
+        let data = slice::from_raw_parts(packet as *const u8, packet_size as usize);
+        context.sender.send(Message::binary(data)).unwrap();
     }
 }
