@@ -89,7 +89,7 @@ impl Handler for ForgeHandler {
                 code, reason
             ),
         }
-        self.client_sender.shutdown().unwrap();
+        self.client_sender.close(CloseCode::Normal).unwrap();
     }
 
     fn on_error(&mut self, err: ws::Error) {

@@ -8,7 +8,7 @@ use std::time::Duration;
 
 fn main() -> Result<(), Error> {
     let context = run_server("127.0.0.1", 8005, &forge::server::PacketCallback {userdata: ptr::null_mut(), func: None })?;
-    thread::sleep(Duration::from_secs(3));
+    thread::sleep(Duration::from_secs(30));
     context.shutdown()?;
     Ok(())
 }
